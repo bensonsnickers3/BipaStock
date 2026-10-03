@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>ContaCerta — Inventário</title>
+<title>BipaStock — Inventário</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
@@ -39,7 +39,7 @@ input,select{border:1px solid var(--bd);background:var(--bg);border-radius:8px;p
 #toast{position:fixed;left:50%;bottom:calc(16px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:8px 14px;border-radius:20px;opacity:0;pointer-events:none;transition:.2s;z-index:10;max-width:90vw}
 #toast.show{opacity:1}#toast.bad{background:var(--bad);color:#fff}
 </style></head><body>
-<header><span class="logo">📦 ContaCerta</span><select id="loc" onchange="chLoc(this.value)"></select><div class="me" id="me" onclick="edPf()"></div></header>
+<header><span class="logo">📦 BipaStock</span><select id="loc" onchange="chLoc(this.value)"></select><div class="me" id="me" onclick="edPf()"></div></header>
 <nav id="nav"></nav><main id="v"></main><div id="md"></div><div id="toast"></div>
 <script>
 const SB_URL='https://cyihcicyboqynvfvikwe.supabase.co',SB_KEY='sb_publishable_haAgr_SZjpLbJG-DOBSGYA_MOWpmUrA';
@@ -67,7 +67,7 @@ function modal(t,fs,v,ok){v=v||{};$('#md').innerHTML=`<div class="ov"><div class
 $('#ok').onclick=async()=>{const o={};for(const f of fs){const e=$('#f_'+f.k);o[f.k]=f.file?(e.files[0]?await resize(e.files[0],128):v[f.k]):e.value.trim()}if(await ok(o)!==false)cl()}}
 
 /* login e dados */
-function authView(m){$('#nav').innerHTML='';$('#me').innerHTML='';$('#loc').innerHTML='';const v=$('#v');v.className='';v.innerHTML=`<div class="card" style="max-width:380px;margin:30px auto"><b>${m?'Criar conta':'Entrar no ContaCerta'}</b><div class="mu" style="margin-top:8px">E-mail</div><input id="em" type="email" autocomplete="username"><div class="mu" style="margin-top:8px">Senha (mín. 6 caracteres)</div><input id="pw" type="password" autocomplete="${m?'new-password':'current-password'}">${m?'<div class="mu" style="margin-top:8px">Seu nome</div><input id="nm">':''}<div class="row" style="margin-top:12px"><button class="b" onclick="${m?'signup()':'signin()'}">${m?'Criar conta':'Entrar'}</button><button class="b g" onclick="authView(${m?0:1})">${m?'Já tenho conta':'Criar conta'}</button></div></div>`}
+function authView(m){$('#nav').innerHTML='';$('#me').innerHTML='';$('#loc').innerHTML='';const v=$('#v');v.className='';v.innerHTML=`<div class="card" style="max-width:380px;margin:30px auto"><b>${m?'Criar conta':'Entrar no BipaStock'}</b><div class="mu" style="margin-top:8px">E-mail</div><input id="em" type="email" autocomplete="username"><div class="mu" style="margin-top:8px">Senha (mín. 6 caracteres)</div><input id="pw" type="password" autocomplete="${m?'new-password':'current-password'}">${m?'<div class="mu" style="margin-top:8px">Seu nome</div><input id="nm">':''}<div class="row" style="margin-top:12px"><button class="b" onclick="${m?'signup()':'signin()'}">${m?'Criar conta':'Entrar'}</button><button class="b g" onclick="authView(${m?0:1})">${m?'Já tenho conta':'Criar conta'}</button></div></div>`}
 async function signin(){const{error}=await sb.auth.signInWithPassword({email:$('#em').value.trim(),password:$('#pw').value});if(error)return ER(error);init()}
 async function signup(){const nome=$('#nm').value.trim();if(!nome)return toast('Informe seu nome',1);const{data,error}=await sb.auth.signUp({email:$('#em').value.trim(),password:$('#pw').value,options:{data:{nome}}});if(error)return ER(error);if(!data.session){toast('Conta criada. Confirme o e-mail e depois entre.');return authView(0)}init()}
 async function out(){await stopCam();if(ch){sb.removeChannel(ch);ch=null}await sb.auth.signOut();M={me:null,locs:[],loc:null,prods:[],logs:[],eq:[]};authView()}
@@ -97,7 +97,7 @@ const ps=(sh('Produtos')||XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{
 if(ps.length&&loc()){toast('Enviando '+ps.length+' produtos...');let r=await sb.from('produtos').delete().eq('local_id',M.loc);if(r.error)throw r.error;const rw=ps.map(p=>({local_id:M.loc,codigo:p.c,sku:p.s,nome:p.n,imagem:p.i,estoque:p.q,ultima_venda:p.u?p.u.slice(0,10):null}));for(let i=0;i<rw.length;i+=500){r=await sb.from('produtos').insert(rw.slice(i,i+500));if(r.error)throw r.error}toast(ps.length+' produtos carregados em '+loc().nome)}else toast(ps.length?'Crie um local antes':'Nenhum produto achado (veja o modelo .xlsx)',1);
 await loadLoc();go()}catch(e){ER(e)}};fr.readAsArrayBuffer(f)}
 function exp(){const l=loc();if(!l)return toast('Selecione um local',1);const r=rows(),w=XLSX.utils.book_new();XLSX.utils.book_append_sheet(w,XLSX.utils.json_to_sheet(r.map(x=>({codigo_barras:x.c,sku:x.s||'',produto:x.n,estoque_sistema:x.q,contado:x.cnt,diferenca:x.d,status:x.cnt||S.z?(x.d?'DIVERGENTE':'OK'):'PENDENTE'}))),'Contagem');XLSX.utils.book_append_sheet(w,XLSX.utils.json_to_sheet(L().map(x=>({data_hora:new Date(x.t).toLocaleString('pt-BR'),local:l.nome,codigo:x.k,produto:x.n,quantidade:x.q,funcionario:x.e,cargo:x.r}))),'Registros');XLSX.writeFile(w,'contagem_'+l.nome.replace(/\W+/g,'_')+'_'+new Date().toISOString().slice(0,10)+'.xlsx')}
-function tpl(){const w=XLSX.utils.book_new(),a=(n,d)=>XLSX.utils.book_append_sheet(w,XLSX.utils.json_to_sheet(d),n);a('Produtos',[{codigo_barras:'7891234567890',sku:'SKU001',produto:'Produto exemplo',imagem_url:'',estoque_sistema:10,ultima_venda:'15/08/2026'}]);a('Lojas',[{nome:'Loja 01'}]);a('CDs',[{nome:'CD 01'}]);XLSX.writeFile(w,'modelo_contacerta.xlsx')}
+function tpl(){const w=XLSX.utils.book_new(),a=(n,d)=>XLSX.utils.book_append_sheet(w,XLSX.utils.json_to_sheet(d),n);a('Produtos',[{codigo_barras:'7891234567890',sku:'SKU001',produto:'Produto exemplo',imagem_url:'',estoque_sistema:10,ultima_venda:'15/08/2026'}]);a('Lojas',[{nome:'Loja 01'}]);a('CDs',[{nome:'CD 01'}]);XLSX.writeFile(w,'modelo_bipastock.xlsx')}
 function clr(){modal('Zerar a contagem deste local para TODOS?',[],{},async()=>{const{error}=await sb.from('contagens').delete().eq('local_id',M.loc);if(error){ER(error);return false}M.logs=[];go()})}
 
 /* telas */
